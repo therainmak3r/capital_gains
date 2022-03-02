@@ -1,0 +1,11 @@
+Things to watch out for:
+- Ignores FB stock
+- Only does buy/sell/split. Ignores the other lines (including options)
+
+Steps:
+- Download CSV from schwab.
+- Name as schwab_original.csv
+- Run schwab_csv_converter.py
+- Get month gbp to usd rates from https://github.com/KapJI/capital-gains-calculator/blob/main/cgt_calc/resources/initial_prices.csv
+- Put them in a file called gbp_usd.csv. Make sure those rates are in csv format
+- Paste output of filtered_scwab.csv in https://cgtcalc.galloway.me.uk/
