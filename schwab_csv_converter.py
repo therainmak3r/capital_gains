@@ -82,12 +82,18 @@ def handleBuySellLine(chunks):
     words = [action, dd_mm_yyyy_date, company_name, num_shares, value, fee]
     return ' '.join(words)
 
+# A dividend which is reinvested is equivalent to buying the stock. The amount of money being
+# reinvested is dividend - NRA adj
+def handleReinvestmentOfDividend(chunks):
+    chunks[1] = "Buy"
+    return handleBuySellLine(chunks)
+
+
 def processSchwabCSV():
     with open(input_filename) as file:
         lines = file.readlines()
         lines = [line.rstrip().lstrip() for line in lines]
 
-    supported_actions = ["Buy", "Sell", "Stock Split"]
     filtered_lines = []
     for line in lines:
         if (line[0:4] in ["Tran", "\"Tra", "\"Dat"]):
@@ -108,12 +114,17 @@ def processSchwabCSV():
         if (chunks[1] in ["Buy", "Sell"]):
             formatted_line = handleBuySellLine(chunks)
             filtered_lines.append(formatted_line)
-            print("formatted line is ", formatted_line)
+            print("buy sell formatted line is ", formatted_line)
 
         if (chunks[1] == "Stock Split"):
             formatted_line = defineManualStockSplit(chunks)
             filtered_lines.append(formatted_line)
-            print("formatted line is ", formatted_line)
+            print("split formatted line is ", formatted_line)
+
+        if (chunks[1] == "Reinvest Shares"):
+            formatted_line = handleReinvestmentOfDividend(chunks)
+            filtered_lines.append(formatted_line)
+            print("dividend formatted line is ", formatted_line)
 
         continue
 
