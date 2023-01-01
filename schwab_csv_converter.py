@@ -1,10 +1,15 @@
 import datetime
 import collections
 import functools
+from pprint import pprint;
 
 input_filename = 'schwab_original.csv'
 output_filename = 'filtered_schwab.csv'
-
+dividends_received_per_year = {
+    "2019/20": 0,
+    "2020/21": 0,
+    "2021/22": 0,
+}
 
 def convertSchwabActionToSupportedAction(action):
     if (action == 'Stock Split'):
@@ -84,9 +89,31 @@ def handleBuySellLine(chunks):
 
 # A dividend which is reinvested is equivalent to buying the stock. The amount of money being
 # reinvested is dividend - NRA adj
-def handleReinvestmentOfDividend(chunks):
+def handleReinvestmentOfDividendAsBuy(chunks):
     chunks[1] = "Buy"
     return handleBuySellLine(chunks)
+
+def financialYearFromMonthYear(dd_mm_yyyy_date: str):
+    year = int(dd_mm_yyyy_date[-4:])
+    month = int(dd_mm_yyyy_date[3:5])
+    date = int(dd_mm_yyyy_date[0:2])
+    if ((month >= 5) or (date >= 6 and month == 4)): # Post April 5th
+        return str(year) + "/" + str((year+ 1)%100)
+    if ((month <= 3) or (date <= 5 and month == 4)): # Pre April 5th, inclusive
+        return str(year - 1) + "/" + str(year%100)
+    raise Exception("financial year calculation issue")
+
+
+def trackDividendPerYear(chunks):
+    mm_dd_yyyy_date = chunks[0][0:10] # taking first 10 chars (mm/dd/yyyy) as some activities have
+    #  weird date formatting
+    dd_mm_yyyy_date = datetime.datetime.strptime(mm_dd_yyyy_date, "%m/%d/%Y").strftime("%d/%m/%Y")
+    fiscal_year = financialYearFromMonthYear(dd_mm_yyyy_date)
+    if fiscal_year not in dividends_received_per_year:
+        raise Exception("fiscal year not in dividend map. Year is ", fiscal_year)
+    dividend_value = float("{:.2f}".format(float(chunks[7].replace("$", ""))))
+    dividends_received_per_year[fiscal_year] += dividend_value
+    return
 
 
 def processSchwabCSV():
@@ -122,9 +149,12 @@ def processSchwabCSV():
             print("split formatted line is ", formatted_line)
 
         if (chunks[1] == "Reinvest Shares"):
-            formatted_line = handleReinvestmentOfDividend(chunks)
+            formatted_line = handleReinvestmentOfDividendAsBuy(chunks)
             filtered_lines.append(formatted_line)
             print("dividend formatted line is ", formatted_line)
+
+        if (chunks[1] == "Qual Div Reinvest"):
+            trackDividendPerYear(chunks)
 
         continue
 
@@ -132,5 +162,8 @@ def processSchwabCSV():
     with open(output_filename, 'w') as output_file:
         for line in filtered_lines:
             output_file.write(line + '\n')
+
+    print("Dividends for each year are ")
+    pprint(dividends_received_per_year)
 
 processSchwabCSV()
