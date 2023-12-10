@@ -10,7 +10,9 @@ dividends_received_per_year = {
     "2020/21": 0,
     "2021/22": 0,
     "2022/23": 0,
+    "2023/24": 0,
 }
+ignored_actions = set()
 
 def convertSchwabActionToSupportedAction(action):
     if (action == 'Stock Split'):
@@ -33,6 +35,15 @@ def defineManualStockSplit(chunks):
 
     if (dd_mm_yyyy_date == "31/08/2020" and company_name == "AAPL"):
         multiplier = "4"
+
+    if (dd_mm_yyyy_date == "18/07/2022" and company_name == "GOOGL"):
+        multiplier = "20"
+
+    if (dd_mm_yyyy_date == "29/06/2022" and company_name == "SHOP"):
+        multiplier = "10"
+
+    if (dd_mm_yyyy_date == "06/06/2022" and company_name == "AMZN"):
+        multiplier = "20"
 
     print("handling split for ", chunks)
     return "SPLIT " + output_line + multiplier
@@ -135,27 +146,25 @@ def processSchwabCSV():
         ################################
         ## IMPORTANT!! SKIPS FB STOCK ##
         ################################
-        if (chunks[2] == "FB" OR chunks[2] == "META"):
+        if (chunks[2] == "FB" or chunks[2] == "META"):
             # don't handle FB stock
             continue;
-
-        if (chunks[1] in ["Buy", "Sell"]):
+        elif (chunks[1] in ["Buy", "Sell"]):
             formatted_line = handleBuySellLine(chunks)
             filtered_lines.append(formatted_line)
             print("buy sell formatted line is ", formatted_line)
-
-        if (chunks[1] == "Stock Split"):
+        elif (chunks[1] == "Stock Split"):
             formatted_line = defineManualStockSplit(chunks)
             filtered_lines.append(formatted_line)
             print("split formatted line is ", formatted_line)
-
-        if (chunks[1] == "Reinvest Shares"):
+        elif (chunks[1] == "Reinvest Shares"):
             formatted_line = handleReinvestmentOfDividendAsBuy(chunks)
             filtered_lines.append(formatted_line)
             print("dividend formatted line is ", formatted_line)
-
-        if (chunks[1] == "Qual Div Reinvest"):
+        elif (chunks[1] == "Qual Div Reinvest"):
             trackDividendPerYear(chunks)
+        else:
+            ignored_actions.add(chunks[1])
 
         continue
 
@@ -166,5 +175,7 @@ def processSchwabCSV():
 
     print("Dividends for each year are ")
     pprint(dividends_received_per_year)
+    pprint("Ignored actions are ")
+    pprint(ignored_actions)
 
 processSchwabCSV()
