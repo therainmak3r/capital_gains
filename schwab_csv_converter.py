@@ -9,6 +9,7 @@ dividends_received_per_year = {
     "2019/20": 0,
     "2020/21": 0,
     "2021/22": 0,
+    "2022/23": 0,
 }
 
 def convertSchwabActionToSupportedAction(action):
@@ -134,7 +135,7 @@ def processSchwabCSV():
         ################################
         ## IMPORTANT!! SKIPS FB STOCK ##
         ################################
-        if (chunks[2] == "FB"):
+        if (chunks[2] == "FB" OR chunks[2] == "META"):
             # don't handle FB stock
             continue;
 
