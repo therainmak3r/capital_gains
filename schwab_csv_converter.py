@@ -160,12 +160,26 @@ def processSchwabCSV():
             continue
 
         chunks = [word.replace('"', "") for word in line.split(",")]
+        month = int(chunks[0][0:2]) # taking first 2 chars (mm/dd/yyyy)
+        year = int(chunks[0][6:10]) # taking 6th to 9th chars (mm/dd/yyyy)
 
         ################################
         ## IMPORTANT!! SKIPS FB STOCK ##
         ################################
         if chunks[2] == "FB" or chunks[2] == "META":
             # don't handle FB stock
+            continue
+        elif (chunks[2] in ["SNAP","ABNB","LYFT","TSLA"] and year <= 2023):
+            # Because Schwab isn't giving me history before 2020 anymore, using this
+            # as a way of ignoring all the buy and sells which had no impact to calculations
+            # in 2023-24 year and beyond. As a result of this line, returns before the 23-24
+            # year can no longer be trusted.
+            print("Ignoring line of ", line)
+            continue
+        elif (chunks[2] in ["PLTR"] and year <= 2021 and month <= 4):
+            # Same as previous case, but handling PLTR separately because some disposal happened in 23-24.
+            # Next year onwards, this can be consolidated into line above.
+            print("Ignoring line of ", line)
             continue
         elif chunks[1] in ["Buy", "Sell"]:
             formatted_line = handleBuySellLine(chunks)
